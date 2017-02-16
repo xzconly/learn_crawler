@@ -23,6 +23,11 @@ class Movie(Model):
         self.quote = ''
 
 
+def log(*args, **kwargs):
+    with open('top250_movies.txt', 'a', encoding='utf-8') as f:
+        print(*args, file=f, **kwargs)
+
+
 def cached_url(url, filename):
     path = os.path.join('cached_movies', filename)
     if os.path.exists(path):
@@ -57,8 +62,20 @@ def movie_from_url(url, filename):
     # 解析下载好的 html 页面
     root = html.fromstring(page)
     movie_divs = root.xpath('//div[@class="item"]')
-    movies = [movie_form_div(div) for div in movie_divs]
+    movies = [movie_from_div(div) for div in movie_divs]
     return movies
+
+
+def download_img(url, name):
+    r = requests.get(url)
+    path = os.path.join('movie_covers', name)
+    with open(path, 'wb') as f:
+        f.write(r.content)
+
+
+def save_covers(movies):
+    for m in movies:
+        download_img(m.cover_url, m.title + '.jpg')
 
 
 def main():
@@ -66,4 +83,9 @@ def main():
         url = 'https://movie.douban.com/top250?start={}'.format(i)
         filename = str(i) + '.html'
         movies = movie_from_url(url, filename)
-        print(movies)
+        log(movies)
+        save_covers(movies)
+
+
+if __name__ == '__main__':
+    main()
